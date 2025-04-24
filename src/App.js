@@ -1,12 +1,12 @@
 import React from "react";
+import Weather from "./Weather";
 
 import "./App.css";
 
 export default function App() {
   return (
     <div className="App">
-      Weather App <br />
-      <button className="btn btn-primary">Hello</button>
+      <Weather />
       <footer>
         This project was coded by Ricquel Harper and is{" "}
         <a
