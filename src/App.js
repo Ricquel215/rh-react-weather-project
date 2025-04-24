@@ -5,7 +5,8 @@ import "./App.css";
 export default function App() {
   return (
     <div className="App">
-      Weather App
+      Weather App <br />
+      <button className="btn btn-primary">Hello</button>
       <footer>
         This project was coded by Ricquel Harper and is{" "}
         <a
