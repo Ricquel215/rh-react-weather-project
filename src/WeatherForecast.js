@@ -8,8 +8,10 @@ export default function WeatherForecast(props) {
   let [forecast, setForecast] = useState(null);
 
   useEffect(() => {
-    setLoaded(false);
-  }, [props.coordinates]);
+    if (!loaded && props.coordinates) {
+      load();
+    }
+  }, [loaded, props.coordinates]);
 
   function handleResponse(response) {
     setForecast(response.data.daily);
@@ -20,9 +22,14 @@ export default function WeatherForecast(props) {
     let apiKey = "5f472b7acba333cd8a035ea85a0d4d4c";
     let longitude = props.coordinates.lon;
     let latitude = props.coordinates.lat;
-    let apiUrl = `https://api.shecodes.io/weather/v1/forecast?lon=${longitude}&lat=${latitude}&key=${apiKey}&units=imperial`;
+    let apiUrl = `https://api.shecodes.io/weather/v1/forecast?lon=${longitude}&lat=${latitude}&key=${apiKey}&units=metric`;
 
-    axios.get(apiUrl).then(handleResponse);
+    axios
+      .get(apiUrl)
+      .then(handleResponse)
+      .catch((error) => {
+        console.error("Error fetching forecast data:", error);
+      });
   }
 
   if (loaded) {
