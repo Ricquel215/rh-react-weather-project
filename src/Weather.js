@@ -7,20 +7,51 @@ import "./Weather.css";
 export default function Weather(props) {
   const [weatherData, setWeatherData] = useState({ ready: false });
   const [city, setCity] = useState(props.defaultCity);
+  const [error, setError] = useState(null);
 
   function handleResponse(response) {
-    console.log("API response:", response);
+    console.log("API response received successfully:", response);
+
+    // Transform OpenWeatherMap response to match your app's structure
     setWeatherData({
       ready: true,
-      coordinates: response.data.coordinates,
-      temperature: response.data.temperature.current,
-      humidity: response.data.temperature.humidity,
-      date: new Date(response.data.time * 1000),
-      description: response.data.condition.description,
-      icon: response.data.condition.icon,
+      coordinates: {
+        latitude: response.data.coord.lat,
+        longitude: response.data.coord.lon,
+      },
+      temperature: response.data.main.temp,
+      humidity: response.data.main.humidity,
+      date: new Date(response.data.dt * 1000),
+      description: response.data.weather[0].description,
+      icon: mapOpenWeatherIconToSheCodesIcon(response.data.weather[0].icon),
       wind: response.data.wind.speed,
-      city: response.data.city,
+      city: response.data.name,
     });
+  }
+
+  // Function to map OpenWeatherMap icons to SheCodes API icon format
+  function mapOpenWeatherIconToSheCodesIcon(openWeatherIcon) {
+    const mapping = {
+      "01d": "clear-sky-day",
+      "01n": "clear-sky-night",
+      "02d": "few-clouds-day",
+      "02n": "few-clouds-night",
+      "03d": "scattered-clouds-day",
+      "03n": "scattered-clouds-night",
+      "04d": "broken-clouds-day",
+      "04n": "broken-clouds-night",
+      "09d": "shower-rain-day",
+      "09n": "shower-rain-night",
+      "10d": "rain-day",
+      "10n": "rain-night",
+      "11d": "thunderstorm-day",
+      "11n": "thunderstorm-night",
+      "13d": "snow-day",
+      "13n": "snow-night",
+      "50d": "mist-day",
+      "50n": "mist-night",
+    };
+    return mapping[openWeatherIcon] || "clear-sky-day";
   }
 
   function handleSubmit(event) {
@@ -33,20 +64,41 @@ export default function Weather(props) {
   }
 
   function search() {
-    const apiKey = "97f8e93f00107773f88eafd933ce86b7";
-    let apiUrl = `https://api.shecodes.io/weather/v1/current?query=${city}&key=${apiKey}&units=metric`;
+    console.log("Searching for city:", city);
+    // Get your own API key from https://openweathermap.org/api
+    const apiKey = "3e7e99a0339b6a1c8aa126a580eedeee";
+    let apiUrl = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric`;
+
+    console.log("Making API request to:", apiUrl);
 
     axios
       .get(apiUrl)
-      .then(handleResponse)
+      .then((response) => {
+        console.log("API call successful");
+        handleResponse(response);
+      })
       .catch((error) => {
-        console.error("Error fetching weather data:", error);
-        alert("Failed to fetch weather data. Please try again.");
+        console.error("API call failed:", error);
+        if (error.response) {
+          console.error("Error response:", error.response.data);
+          console.error("Status code:", error.response.status);
+        } else if (error.request) {
+          console.error("No response received");
+        } else {
+          console.error("Error message:", error.message);
+        }
+        setError("Failed to fetch weather data. Try again later.");
       });
   }
 
+  // Only run once on component mount
   useEffect(() => {
+    console.log(
+      "Component mounted, performing initial search for:",
+      props.defaultCity
+    );
     search();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (weatherData.ready) {
@@ -76,8 +128,29 @@ export default function Weather(props) {
         <WeatherForecast coordinates={weatherData.coordinates} />
       </div>
     );
+  } else if (error) {
+    return (
+      <div className="Weather error-container">
+        <div className="alert alert-danger">{error}</div>
+        <button
+          className="btn btn-primary mt-3"
+          onClick={() => {
+            setError(null);
+            search();
+          }}
+        >
+          Try Again
+        </button>
+      </div>
+    );
   } else {
-    search();
-    return "Loading...";
+    return (
+      <div className="Weather loading-container text-center mt-5">
+        <div className="spinner-border" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+        <p className="mt-2">Loading weather data...</p>
+      </div>
+    );
   }
 }

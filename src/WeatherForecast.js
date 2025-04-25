@@ -8,21 +8,71 @@ export default function WeatherForecast(props) {
   let [forecast, setForecast] = useState(null);
 
   useEffect(() => {
+    setLoaded(false);
+  }, [props.coordinates]);
+
+  useEffect(() => {
     if (!loaded && props.coordinates) {
       load();
     }
   }, [loaded, props.coordinates]);
 
   function handleResponse(response) {
-    setForecast(response.data.daily);
+    console.log("Forecast API response:", response);
+
+    // Process and transform the daily forecast data
+    const forecastData = response.data.list
+      // Group by day (OpenWeatherMap returns 3-hour forecasts)
+      .filter((item, index) => index % 8 === 0) // Take one forecast per day (every 8th item = 24 hours)
+      .map((item) => ({
+        // Transform to match SheCodes API structure expected by WeatherForecastDay
+        time: item.dt,
+        temperature: {
+          maximum: item.main.temp_max,
+          minimum: item.main.temp_min,
+        },
+        condition: {
+          icon: mapOpenWeatherIconToSheCodesIcon(item.weather[0].icon),
+        },
+      }));
+
+    setForecast(forecastData);
     setLoaded(true);
   }
 
+  // Function to map OpenWeatherMap icons to SheCodes API icon format
+  function mapOpenWeatherIconToSheCodesIcon(openWeatherIcon) {
+    const mapping = {
+      "01d": "clear-sky-day",
+      "01n": "clear-sky-night",
+      "02d": "few-clouds-day",
+      "02n": "few-clouds-night",
+      "03d": "scattered-clouds-day",
+      "03n": "scattered-clouds-night",
+      "04d": "broken-clouds-day",
+      "04n": "broken-clouds-night",
+      "09d": "shower-rain-day",
+      "09n": "shower-rain-night",
+      "10d": "rain-day",
+      "10n": "rain-night",
+      "11d": "thunderstorm-day",
+      "11n": "thunderstorm-night",
+      "13d": "snow-day",
+      "13n": "snow-night",
+      "50d": "mist-day",
+      "50n": "mist-night",
+    };
+    return mapping[openWeatherIcon] || "clear-sky-day";
+  }
+
   function load() {
-    let apiKey = "5f472b7acba333cd8a035ea85a0d4d4c";
-    let longitude = props.coordinates.lon;
-    let latitude = props.coordinates.lat;
-    let apiUrl = `https://api.shecodes.io/weather/v1/forecast?lon=${longitude}&lat=${latitude}&key=${apiKey}&units=metric`;
+    // Get your own API key from https://openweathermap.org/api
+    let apiKey = "1d038ee28ef2ad25c57974aa6749dad5";
+    let latitude = props.coordinates.latitude;
+    let longitude = props.coordinates.longitude;
+    let apiUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${latitude}&lon=${longitude}&appid=${apiKey}&units=metric`;
+
+    console.log("Forecast API URL:", apiUrl);
 
     axios
       .get(apiUrl)
@@ -32,7 +82,7 @@ export default function WeatherForecast(props) {
       });
   }
 
-  if (loaded) {
+  if (loaded && forecast) {
     return (
       <div className="WeatherForecast">
         <div className="row">
@@ -51,8 +101,12 @@ export default function WeatherForecast(props) {
       </div>
     );
   } else {
-    load();
-
-    return null;
+    return (
+      <div className="WeatherForecast text-center">
+        <div className="spinner-border spinner-border-sm" role="status">
+          <span className="visually-hidden">Loading forecast...</span>
+        </div>
+      </div>
+    );
   }
 }
