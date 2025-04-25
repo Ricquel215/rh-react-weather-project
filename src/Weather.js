@@ -9,16 +9,17 @@ export default function Weather(props) {
   const [city, setCity] = useState(props.defaultCity);
 
   function handleResponse(response) {
+    console.log("API response:", response);
     setWeatherData({
       ready: true,
-      coordinates: response.data.coord,
-      temperature: response.data.main.temp,
-      humidity: response.data.main.humidity,
-      date: new Date(response.data.dt * 1000),
+      coordinates: response.data.coordinates,
+      temperature: response.data.temperature.curren,
+      humidity: response.data.temperature.humidity,
+      date: new Date(response.data.time * 1000),
       description: response.data.weather[0].description,
       icon: response.data.weather[0].icon,
       wind: response.data.wind.speed,
-      city: response.data.name,
+      city: response.data.city,
     });
   }
 
@@ -37,34 +38,48 @@ export default function Weather(props) {
     axios.get(apiUrl).then(handleResponse);
   }
 
-  if (weatherData.ready) {
-    return (
-      <div className="Weather">
-        <form onSubmit={handleSubmit}>
-          <div className="row">
-            <div className="col-9">
-              <input
-                type="search"
-                placeholder="Enter a city"
-                className="form-control"
-                autoFocus="on"
-                onChange={handleCityChange}
-              />
-            </div>
-            <div className="col-3">
-              <input
-                type="submit"
-                value="Search"
-                className="btn btn-primary w-100"
-              />
-            </div>
-          </div>
-        </form>
-        <WeatherInfo data={weatherData} />
-        <WeatherForecast coordinates={weatherData.coordinates} />
-      </div>
-    );
-  } else {
-    return "Loading...";
+  axios
+    .get(apiUrl)
+    .then(handleResponse)
+    .catch((error) => {
+      console.error("Error fetching weather data:", error);
+      alert("Failed to fetch weather data. Please try again.");
+    });
+}
+
+useEffect(() => {
+  if (!weatherData.ready) {
+    search();
   }
+}, []);
+
+if (weatherData.ready) {
+  return (
+    <div className="Weather">
+      <form onSubmit={handleSubmit}>
+        <div className="row">
+          <div className="col-9">
+            <input
+              type="search"
+              placeholder="Enter a city"
+              className="form-control"
+              autoFocus="on"
+              onChange={handleCityChange}
+            />
+          </div>
+          <div className="col-3">
+            <input
+              type="submit"
+              value="Search"
+              className="btn btn-primary w-100"
+            />
+          </div>
+        </div>
+      </form>
+      <WeatherInfo data={weatherData} />
+      <WeatherForecast coordinates={weatherData.coordinates} />
+    </div>
+  );
+} else {
+  return "Loading...";
 }
