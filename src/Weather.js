@@ -78,7 +78,5 @@ export default function Weather(props) {
         <WeatherForecast coordinates={weatherData.coordinates} />
       </div>
     );
-  } else {
-    return "Loading...";
   }
 }
